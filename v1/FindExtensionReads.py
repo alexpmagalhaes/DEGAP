@@ -21,8 +21,8 @@ class FindExtensionReads(object):
 			self.readlog()
 		else:
 			logfilet=open(self.log,'w')
-			self.potentialExtensionReadsAln,self.minimap2Command,self.minimap2Output=self.minimap2()
-			logLine='potentialExtensionReadsAln\t'+self.potentialExtensionReadsAln+"\nminimap2Command\t"+self.minimap2Command+"\nminimap2Output\t"+self.minimap2Output+"\n"
+			self.potentialExtensionReadsAln,self.rammapCommand,self.rammapOutput=self.rammap()
+			logLine='potentialExtensionReadsAln\t'+self.potentialExtensionReadsAln+"\nrammapCommand\t"+self.rammapCommand+"\nrammapOutput\t"+self.rammapOutput+"\n"
 			logfilet.writelines(logLine)
 
 			self.minimumExtensionReads()
@@ -230,21 +230,21 @@ class FindExtensionReads(object):
 		outputBamFile.close()
 		return readslist
 		
-	def minimap2(self):
+	def rammap(self):
 		alnname=self.roundInput.elongation.roundDir+"/potentialExtensionReads."+self.roundInput.elongation.base.tag+".bam"
 		alnname1=self.roundInput.elongation.roundDir+"/extensionReads."+self.roundInput.elongation.base.tag+".fa"
-		commandline="minimap2 -t "+self.roundInput.elongation.base.thread+" -Y -ax asm20 "+self.roundInput.inputSeq+" "+self.roundInput.elongation.base.reads+" | samtools view -bS >"+alnname
+		commandline="rammap -t "+self.roundInput.elongation.base.thread+" -Y -ax asm20 "+self.roundInput.inputSeq+" "+self.roundInput.elongation.base.reads+" | samtools view -bS >"+alnname
 		if os.path.exists(alnname)==True and os.path.getsize(alnname)!=0 and os.path.exists(alnname1)==True and os.path.getsize(alnname1)!=0:
 			return alnname,commandline,str(0)
 		else:
 			output=os.system(commandline)
-			minimaptag=1
+			rammaptag=1
 			if output!=0:
 				while output!=0:
 					output=os.system(commandline)
-					minimaptag+=1
-					if minimaptag>=3:
-						print ("minimap2 cannot do proper alignment!!!")
+					rammaptag+=1
+					if rammaptag>=3:
+						print ("rammap cannot do proper alignment!!!")
 						sys.exit()
 			return alnname,commandline,str(output)
 			
@@ -256,10 +256,10 @@ class FindExtensionReads(object):
 			row1=row.rstrip().split('\t')
 			if row1[0]=='potentialExtensionReadsAln':
 				self.potentialExtensionReadsAln=row1[1]
-			elif row1[0]=='minimap2Command':
-				self.minimap2Command=row1[1]
-			elif row1[0]=='minimap2Output':
-				self.minimap2Output=row1[1]
+			elif row1[0]=='rammapCommand':
+				self.rammapCommand=row1[1]
+			elif row1[0]=='rammapOutput':
+				self.rammapOutput=row1[1]
 			elif row1[0]=='minimumThresholdReadsAln':
 				self.minimumThresholdReadsAln=row1[1]
 			elif row1[0]=='minimumThresholdReadsID':

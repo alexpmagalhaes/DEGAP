@@ -112,9 +112,9 @@ class selectRawReads(object):
 					self.alnTag=int(row1[1])
 			file1.close()
 		else:
-			self.alnFile,self.alnCommand,self.alnTag=self.minimap2()
+			self.alnFile,self.alnCommand,self.alnTag=self.rammap()
 		if self.alnTag!=0:
-			self.alnFile,self.alnCommand,self.alnTag=self.minimap2()
+			self.alnFile,self.alnCommand,self.alnTag=self.rammap()
 		l='alnFile\t'+self.alnFile+"\nalnCommand\t"+self.alnCommand+"\nalnTag\t"+str(self.alnTag)+"\n"
 		file1=open(self.selectRawReadsLog,'w')
 		file1.writelines(l)
@@ -330,7 +330,7 @@ class selectRawReads(object):
 
 		# 1. Align ONT reads to input sequence
 		print("Aligning ONT reads to input sequence...")
-		ont_aln_cmd = f"minimap2 -t {self.thread} -Y -ax map-ont {self.inputSeq} {self.ont_reads} | samtools sort -@ {self.thread} -o {ont_aln_file}"
+		ont_aln_cmd = f"rammap -t {self.thread} -Y -ax map-ont {self.inputSeq} {self.ont_reads} | samtools sort -@ {self.thread} -o {ont_aln_file}"
 
 		if not os.path.exists(ont_aln_file) or os.path.getsize(ont_aln_file) == 0:
 			try:
@@ -501,10 +501,10 @@ class selectRawReads(object):
 		return alnSortDepth
 			
 
-	def minimap2(self):
+	def rammap(self):
 		alnname=self.out+"/Genome.inputCtg.mappedReads.sort.bam"
 
-		# Choose appropriate minimap2 preset based on data type
+		# Choose appropriate rammap preset based on data type
 		if self.data_type == 'ont':
 			preset = "map-ont"
 		elif self.data_type == 'hifi':
@@ -514,18 +514,18 @@ class selectRawReads(object):
 		else:
 			preset = "asm20"  # Default
 
-		commandline="minimap2 -t "+self.thread+" -Y -ax "+preset+" "+self.inputSeq+" "+self.reads+" | samtools sort -@ "+self.thread+" -o "+alnname
+		commandline="rammap -t "+self.thread+" -Y -ax "+preset+" "+self.inputSeq+" "+self.reads+" | samtools sort -@ "+self.thread+" -o "+alnname
 
 		if os.path.exists(alnname)==True and os.path.getsize(alnname)!=0 and self.alnTag==0:
 			return alnname,commandline,str(0)
 		else:
 			output=os.system(commandline)
-			minimaptag=1
+			rammaptag=1
 			if output!=0:
 				while output!=0:
 					output=os.system(commandline)
-					minimaptag+=1
-					if minimaptag>=3:
-						print ("minimap2 cannot do proper alignment!!!")
+					rammaptag+=1
+					if rammaptag>=3:
+						print ("rammap cannot do proper alignment!!!")
 						sys.exit()
 			return alnname,commandline,str(output)

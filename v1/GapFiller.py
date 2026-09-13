@@ -220,7 +220,7 @@ class Elongation(object):
 		logLine+="\tseedSequenceFile: "+str(self.roundResult.roundInput.inputSeq)+"\n"
 		logLine+="\t\tseedSeqnenceID: "+str(self.roundResult.roundInput.inputSeedSequence.id)+"\n\t\tseedSeqnenceLength: "+str(len(self.roundResult.roundInput.inputSeedSequence.seq))+"\n\n"
 		if self.roundResult.ExtensionReads.note=='' and 'No extension contigs or reads found' not in self.roundResult.ExtensionContigs.selectContigNote and "Reach the maximum Length" not in self.roundResult.ExtensionContigs.selectContigNote:
-			logLine+='minimap2Commond: '+str(self.roundResult.ExtensionReads.minimap2Command)+"\n"
+			logLine+='rammapCommond: '+str(self.roundResult.ExtensionReads.rammapCommand)+"\n"
 			logLine+='\textensionReads: \n\tselectReadsNum: '+str(self.roundResult.ExtensionReads.selectReadsNum)+"\n"
 			logLine+="\t\tselectReadsAln: "+str(self.roundResult.ExtensionReads.selectPotentialExtensionReadsAln)+"\n"
 			logLine+="\t\tselectMappingQuality: "+str(self.roundResult.ExtensionReads.selectMappingQuality)+"\n"

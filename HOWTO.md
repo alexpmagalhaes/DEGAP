@@ -69,7 +69,7 @@ We recommend using [Micromamba](https://mamba.readthedocs.io/en/latest/installat
    micromamba env update -f environment.yml --prune
    ```
 
-The `environment.yml` file pins the main Python version, core Python packages (Biopython, Pysam, NumPy, Matplotlib, SciPy) and the required external tools (Minimap2, Hifiasm, SAMtools, Seqkit, MUMmer4, GNU Parallel, Ripgrep), ensuring a reproducible runtime environment for **DEGAP v2**.
+The `environment.yml` file pins the main Python version and core Python packages (Biopython, Pysam, NumPy, Matplotlib, SciPy), plus the external tools available via conda (Hifiasm, SAMtools, Seqkit, MUMmer4, GNU Parallel, Ripgrep). Rammap is not on conda/bioconda and must be built separately (see `environment.yml` for the build command), ensuring a reproducible runtime environment for **DEGAP v2**.
 
 ### Alternative: install Python packages with pip
 
@@ -83,7 +83,7 @@ pip install biopython pysam numpy matplotlib scipy
 
 If you install tools manually (without Micromamba), ensure the following programs are installed and available in your `PATH`:
 
-- **Minimap2** (2.28): https://github.com/lh3/minimap2
+- **Rammap**: https://github.com/jwanglab/rammap (build from source with `cargo build --release` and put the binary on `PATH`)
 - **Hifiasm** (0.25.0): https://github.com/chhylp123/hifiasm
 - **SAMtools** (1.22.1): http://www.htslib.org/
 - **Seqkit** (2.8.0): https://github.com/shenwei356/seqkit

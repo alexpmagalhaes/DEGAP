@@ -539,8 +539,8 @@ class FindExtensionContigs(object):
 		if total_extension_reads > 1:
 			self.extensionSeqNote='readsCommon'
 			
-			# ========== 方案1：使用 minimap2 all-vs-all 模式 ==========
-			print(f"Using minimap2 all-vs-all mode for overlap detection ({len(readlisttemp)} reads)...")
+			# ========== 方案1：使用 rammap all-vs-all 模式 ==========
+			print(f"Using rammap all-vs-all mode for overlap detection ({len(readlisttemp)} reads)...")
 			
 			# 创建只包含预过滤后 reads 的临时文件
 			filtered_reads_file = self.extensionReads.roundInput.elongation.roundDir+'/filtered_reads.fa'
@@ -561,30 +561,30 @@ class FindExtensionContigs(object):
 			reads_dict = SeqIO.index(filtered_reads_file, "fasta")
 			print(f"Sequence index created for {len(reads_dict)} reads")
 			
-			# 根据数据类型选择 minimap2 预设
+			# 根据数据类型选择 rammap 预设
 			if self.data_type == 'ont':
-				minimap2_preset = 'ava-ont'
+				rammap_preset = 'ava-ont'
 			else:
-				minimap2_preset = 'ava-pb'  # HiFi 和 mixed 模式
+				rammap_preset = 'ava-pb'  # HiFi 和 mixed 模式
 			
-			# 运行 minimap2 all-vs-all 比对
+			# 运行 rammap all-vs-all 比对
 			# 使用 -N 1 参数：每个query只保留最优比对，大幅减少PAF文件大小
 			paf_output = self.extensionReads.roundInput.elongation.roundDir+'/all_vs_all.paf'
 			thread_num = self.extensionReads.roundInput.elongation.base.thread
 			
-			minimap2_cmd = f"minimap2 -x {minimap2_preset} -N 1 -t {thread_num} {filtered_reads_file} {filtered_reads_file} > {paf_output}"
+			rammap_cmd = f"rammap -x {rammap_preset} -N 1 -t {thread_num} {filtered_reads_file} {filtered_reads_file} > {paf_output}"
 			
-			print(f"Running minimap2 all-vs-all with -N 1: {minimap2_cmd}")
+			print(f"Running rammap all-vs-all with -N 1: {rammap_cmd}")
 			
 			try:
-				result = subprocess.run(minimap2_cmd, shell=True, capture_output=True, text=True)
+				result = subprocess.run(rammap_cmd, shell=True, capture_output=True, text=True)
 				if result.returncode != 0:
-					print(f"Warning: minimap2 failed: {result.stderr}")
-					raise Exception("minimap2 all-vs-all failed")
+					print(f"Warning: rammap failed: {result.stderr}")
+					raise Exception("rammap all-vs-all failed")
 				
-				print(f"minimap2 completed, parsing PAF file...")
+				print(f"rammap completed, parsing PAF file...")
 				
-				# 简化的解析逻辑：minimap2 -N 1 已经保证每个query只有最优比对
+				# 简化的解析逻辑：rammap -N 1 已经保证每个query只有最优比对
 				# 这里只需要：① 去重A-B/B-A  ② 边缘过滤  ③ 长度过滤
 				overlap_dict = {}  # {pair_key: coord_info}
 				
@@ -682,7 +682,7 @@ class FindExtensionContigs(object):
 				# 关闭索引文件
 				reads_dict.close()
 				
-				print(f"minimap2 all-vs-all completed: found {overlap_count} valid overlaps")
+				print(f"rammap all-vs-all completed: found {overlap_count} valid overlaps")
 				
 				# 清理临时文件
 				try:
@@ -692,7 +692,7 @@ class FindExtensionContigs(object):
 					pass
 				
 			except Exception as e:
-				print(f"Error during minimap2 all-vs-all: {e}")
+				print(f"Error during rammap all-vs-all: {e}")
 				print("Falling back to original MUMmer-based pairwise comparison...")
 				
 				# 回退到原始的 MUMmer 两两比对方法

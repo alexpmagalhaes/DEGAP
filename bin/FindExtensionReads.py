@@ -64,24 +64,24 @@ class FindExtensionReads(object):
 		else:
 			logfilet=open(self.log,'w')
 			try:
-				# 直接执行minimap2（已移除kmer过滤回退机制）
-				minimap2_result = self.minimap2()
-				if minimap2_result is None:
-					# minimap2返回None，可能是因为k-mer粗筛没有结果或没有合适的reads
-					print("minimap2未找到合适的reads（k-mer粗筛无结果或无匹配reads）")
+				# 直接执行rammap（已移除kmer过滤回退机制）
+				rammap_result = self.rammap()
+				if rammap_result is None:
+					# rammap返回None，可能是因为k-mer粗筛没有结果或没有合适的reads
+					print("rammap未找到合适的reads（k-mer粗筛无结果或无匹配reads）")
 					self.potentialExtensionReadsAln = None
-					self.minimap2Command = None
-					self.minimap2Output = None
+					self.rammapCommand = None
+					self.rammapOutput = None
 					self.extensionReadsNum = 0
 					self.note = 'kmerFilterNoReads'  # 设置note以终止后续处理
 					logLine='note\tkmerFilterNoReads\nextensionReadsNum\t0\n'
 					logfilet.writelines(logLine)
 				else:
-					self.potentialExtensionReadsAln,self.minimap2Command,self.minimap2Output = minimap2_result
-					logLine='potentialExtensionReadsAln\t'+self.potentialExtensionReadsAln+"\nminimap2Command\t"+self.minimap2Command+"\nminimap2Output\t"+self.minimap2Output+"\n"
+					self.potentialExtensionReadsAln,self.rammapCommand,self.rammapOutput = rammap_result
+					logLine='potentialExtensionReadsAln\t'+self.potentialExtensionReadsAln+"\nrammapCommand\t"+self.rammapCommand+"\nrammapOutput\t"+self.rammapOutput+"\n"
 					logfilet.writelines(logLine)
 
-				# 只有在minimap2成功的情况下才继续执行
+				# 只有在rammap成功的情况下才继续执行
 				if self.potentialExtensionReadsAln is not None:
 					self.minimumExtensionReads()
 
@@ -106,7 +106,7 @@ class FindExtensionReads(object):
 						logLine='minimumThresholdExtensionReadsID\t'+';'.join(self.minimumThresholdExtensionReadsID)+"\n"
 						logfilet.writelines(logLine)
 				else:
-					# 当k-mer过滤失败或minimap2失败时，设置默认值
+					# 当k-mer过滤失败或rammap失败时，设置默认值
 					print("设置默认的extension reads属性")
 					self.minimumThresholdReadsAln = None
 					self.minimumThresholdReadsID = []
@@ -245,7 +245,7 @@ class FindExtensionReads(object):
 			logfilet.close()
 
 	def processONTExtensionReads(self):
-		"""Process ONT extension reads for mixed mode with minimap2-samFilter-extensionFinder pipeline"""
+		"""Process ONT extension reads for mixed mode with rammap-samFilter-extensionFinder pipeline"""
 		import os
 		import shutil
 		
@@ -303,28 +303,28 @@ class FindExtensionReads(object):
 		print(f"Using ONT reads file: {ont_reads_to_use}")
 
 		try:
-			# Stage 1: ONT minimap2 alignment
-			print("Stage 1: ONT minimap2 alignment...")
+			# Stage 1: ONT rammap alignment
+			print("Stage 1: ONT rammap alignment...")
 			ont_potential_aln = self.roundInput.elongation.roundDir + f"/ont.potentialExtensionReads.{self.roundInput.elongation.base.tag}.bam"
 			ont_input_sequence = self.roundInput.elongation.roundDir + f"/ont.inputCutSequence.fasta"
 
-			# 始终使用单进程 minimap2（benchmark 证明单进程性能更好）
+			# 始终使用单进程 rammap（benchmark 证明单进程性能更好）
 			# Use os.system() like v1 - no timeout limit
-			minimap_cmd = f"minimap2 -t {self.roundInput.elongation.base.thread} -Y -ax map-ont {ont_input_sequence} {ont_reads_to_use} | samtools view -bS > {ont_potential_aln}"
-			print(f"Executing ONT minimap2 (single-process): {minimap_cmd}")
+			minimap_cmd = f"rammap -t {self.roundInput.elongation.base.thread} -Y -ax map-ont {ont_input_sequence} {ont_reads_to_use} | samtools view -bS > {ont_potential_aln}"
+			print(f"Executing ONT rammap (single-process): {minimap_cmd}")
 			result = os.system(minimap_cmd)
 
 			# Check return code and retry if failed (matches v1 behavior)
 			if result != 0:
-				minimaptag = 1
+				rammaptag = 1
 				while result != 0:
-					print(f"ONT minimap2 command execution failed, return code: {result}")
-					print(f"Retry {minimaptag} of ONT minimap2 command...")
+					print(f"ONT rammap command execution failed, return code: {result}")
+					print(f"Retry {rammaptag} of ONT rammap command...")
 					result = os.system(minimap_cmd)
-					minimaptag += 1
-					if minimaptag >= 3:
-						print("ONT minimap2 cannot do proper alignment!!!")
-						raise Exception("ONT minimap2 failed after 3 retries")
+					rammaptag += 1
+					if rammaptag >= 3:
+						print("ONT rammap cannot do proper alignment!!!")
+						raise Exception("ONT rammap failed after 3 retries")
 
 			# Stage 2: ONT minimum threshold filtering
 			print("Stage 2: ONT minimum threshold filtering...")
@@ -1985,7 +1985,7 @@ class FindExtensionReads(object):
 			traceback.print_exc()
 			return None
 
-	def minimap2(self):
+	def rammap(self):
 		# Import required modules
 		import os
 		import subprocess
@@ -2014,14 +2014,14 @@ class FindExtensionReads(object):
 		kmer_filter_enabled = getattr(self.roundInput.elongation.base, 'kmer_filter', False)
 
 		if kmer_filter_enabled:
-			# K-mer filtering is ENABLED - use single-process minimap2
+			# K-mer filtering is ENABLED - use single-process rammap
 			print("=" * 80)
 			print("K-mer filtering: ENABLED")
 			print(f"  - K-mer size: {self.kmer_size}")
 			print(f"  - Target k-mer number: {self.kmer_num}")
 			print(f"  - Low-frequency threshold: ≤100")
 			print(f"  - Expected reads reduction: 50-70%")
-			print("  - Minimap2 strategy: Single-process (reads already filtered)")
+			print("  - Rammap strategy: Single-process (reads already filtered)")
 			print("=" * 80)
 
 			# In mixed mode, use HiFi seed sequence for k-mer filtering (shorter, more efficient)
@@ -2039,21 +2039,21 @@ class FindExtensionReads(object):
 			if filtered_reads and os.path.exists(filtered_reads) and os.path.getsize(filtered_reads) > 0:
 				reads_to_use = os.path.abspath(filtered_reads)
 				print(f"Using filtered reads file: {reads_to_use}, kmer_size={self.kmer_size}, kmer_num={self.kmer_num}")
-				# Use single-process minimap2 for filtered reads
-				return self._single_process_minimap2(reads_to_use, alnname, alnname1)
+				# Use single-process rammap for filtered reads
+				return self._single_process_rammap(reads_to_use, alnname, alnname1)
 			else:
-				# K-mer 粗筛没有结果，直接结束，不继续执行无意义的 minimap2
+				# K-mer 粗筛没有结果，直接结束，不继续执行无意义的 rammap
 				print(f"K-mer filtering returned no results (all partitions empty)")
 				print(f"This indicates no reads contain the seed k-mers, ending extension for this gap")
 				return None
 
 		else:
-			# K-mer filtering is DISABLED - check if we should use parallel minimap2
+			# K-mer filtering is DISABLED - check if we should use parallel rammap
 			print("=" * 80)
 			print("K-mer filtering: DISABLED (using all reads)")
 			print("=" * 80)
 
-			# 始终使用单进程 minimap2（benchmark 证明单进程性能更好）
+			# 始终使用单进程 rammap（benchmark 证明单进程性能更好）
 			# 优先使用 processed_reads 中的文件（如果存在），否则使用原始路径
 			reads_to_use = self._get_reads_path(file_prefix)
 
@@ -2065,12 +2065,12 @@ class FindExtensionReads(object):
 
 			print(f"  - Reads file: {reads_to_use}")
 			print(f"  - Reads file size: {reads_size_gb:.2f} GB")
-			print(f"  - Minimap2 strategy: SINGLE-PROCESS (benchmark proven to be faster)")
+			print(f"  - Rammap strategy: SINGLE-PROCESS (benchmark proven to be faster)")
 			print(f"  - Threads: {self.roundInput.elongation.base.thread}")
 			print(f"  - Tip: Add --kmer_filter to enable filtering and reduce processing time")
 			print("=" * 80)
 
-			return self._single_process_minimap2(reads_to_use, alnname, alnname1)
+			return self._single_process_rammap(reads_to_use, alnname, alnname1)
 
 	def _get_reads_path(self, file_prefix):
 		"""
@@ -2227,9 +2227,9 @@ class FindExtensionReads(object):
 		else:
 			raise ValueError(f"Invalid file_prefix: {file_prefix}")
 
-	def _single_process_minimap2(self, reads_to_use, alnname, alnname1):
+	def _single_process_rammap(self, reads_to_use, alnname, alnname1):
 		"""
-		Single-process minimap2 alignment (original strategy)
+		Single-process rammap alignment (original strategy)
 
 		Args:
 			reads_to_use: Path to reads file
@@ -2267,14 +2267,14 @@ class FindExtensionReads(object):
 		else:
 			# Single data type mode - use primary inputSeq
 			input_seq = self.roundInput.inputSeq
-			# Choose minimap2 preset by data type: ONT-only uses map-ont; others use asm20
+			# Choose rammap preset by data type: ONT-only uses map-ont; others use asm20
 			preset = 'map-ont' if data_type == 'ont' else 'asm20'
 
 		# Ensure inputSeq uses absolute path
 		input_seq_abs = os.path.abspath(input_seq)
-		print(f"minimap2 using absolute paths: input_seq={input_seq_abs}, reads={reads_to_use}")
+		print(f"rammap using absolute paths: input_seq={input_seq_abs}, reads={reads_to_use}")
 
-		commandline = f"minimap2 -t {self.roundInput.elongation.base.thread} -Y -ax {preset} {input_seq_abs} {reads_to_use} | samtools view -bS >{alnname}"
+		commandline = f"rammap -t {self.roundInput.elongation.base.thread} -Y -ax {preset} {input_seq_abs} {reads_to_use} | samtools view -bS >{alnname}"
 
 		# If file already exists and is valid, return directly
 		if os.path.exists(alnname)==True and os.path.getsize(alnname)!=0 and os.path.exists(alnname1)==True and os.path.getsize(alnname1)!=0:
@@ -2285,29 +2285,29 @@ class FindExtensionReads(object):
 			start_time = time.time()
 
 			output = os.system(commandline)
-			minimaptag = 1
+			rammaptag = 1
 
 			# Retry up to 3 times if failed (matches v1 behavior)
 			if output != 0:
 				while output != 0:
-					print(f"minimap2 command execution failed, return code: {output}")
-					print(f"Retry {minimaptag} of minimap2 command...")
+					print(f"rammap command execution failed, return code: {output}")
+					print(f"Retry {rammaptag} of rammap command...")
 					output = os.system(commandline)
-					minimaptag += 1
-					if minimaptag >= 3:
-						print("minimap2 cannot do proper alignment!!!")
+					rammaptag += 1
+					if rammaptag >= 3:
+						print("rammap cannot do proper alignment!!!")
 						sys.exit(1)
 
 			# Check output file size (no indexing to match v1 behavior)
 			if os.path.exists(alnname):
 				file_size = os.path.getsize(alnname)
 				if file_size == 0:
-					print(f"Warning: minimap2 generated BAM file size is 0 bytes")
+					print(f"Warning: rammap generated BAM file size is 0 bytes")
 				else:
-					print(f"minimap2 generated BAM file size: {file_size} bytes")
+					print(f"rammap generated BAM file size: {file_size} bytes")
 
 			elapsed_time = time.time() - start_time
-			print(f"Single-process minimap2 completed in {elapsed_time:.2f} seconds")
+			print(f"Single-process rammap completed in {elapsed_time:.2f} seconds")
 			return alnname, commandline, str(output)
 
 	def readlog(self):
@@ -2316,10 +2316,10 @@ class FindExtensionReads(object):
 			row1=row.rstrip().split('\t')
 			if row1[0]=='potentialExtensionReadsAln':
 				self.potentialExtensionReadsAln=row1[1]
-			elif row1[0]=='minimap2Command':
-				self.minimap2Command=row1[1]
-			elif row1[0]=='minimap2Output':
-				self.minimap2Output=row1[1]
+			elif row1[0]=='rammapCommand':
+				self.rammapCommand=row1[1]
+			elif row1[0]=='rammapOutput':
+				self.rammapOutput=row1[1]
 			elif row1[0]=='minimumThresholdReadsAln':
 				self.minimumThresholdReadsAln=row1[1]
 			elif row1[0]=='minimumThresholdReadsID':

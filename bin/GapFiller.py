@@ -785,7 +785,7 @@ class Elongation(object):
 		extension_reads_ok = self.roundResult.ExtensionReads is not None and self.roundResult.ExtensionReads.note == ''
 		extension_contigs_ok = self.roundResult.ExtensionContigs is not None and 'No extension contigs or reads found' not in self.roundResult.ExtensionContigs.selectContigNote and "Reach the maximum Length" not in self.roundResult.ExtensionContigs.selectContigNote
 		if extension_reads_ok and extension_contigs_ok:
-			logLine+='minimap2Commond: '+str(self.roundResult.ExtensionReads.minimap2Command)+"\n"
+			logLine+='rammapCommond: '+str(self.roundResult.ExtensionReads.rammapCommand)+"\n"
 			logLine+='\textensionReads: \n\tselectReadsNum: '+str(self.roundResult.ExtensionReads.selectReadsNum)+"\n"
 			logLine+="\t\tselectReadsAln: "+str(self.roundResult.ExtensionReads.selectPotentialExtensionReadsAln)+"\n"
 			logLine+="\t\tselectMappingQuality: "+str(self.roundResult.ExtensionReads.selectMappingQuality)+"\n"
